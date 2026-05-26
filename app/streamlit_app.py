@@ -42,31 +42,25 @@ def load_feature_data():
     return pd.read_csv(FEATURE_FILE)
 
 
-def risk_color(level: str) -> str:
-    mapping = {
-        "Low": "green",
-        "Medium": "orange",
-        "High": "red",
-        "Critical": "darkred",
-    }
-    return mapping.get(level, "gray")
-
-
 risk_df = load_risk_data()
 feature_df = load_feature_data()
 
-st.title("Gedis – Predictive Maintenance for Industrial Systems")
+
+st.title("Gedis – Predictive Maintenance Demo")
 
 st.markdown(
     """
-    Industrial AI dashboard for turbofan engine degradation monitoring.
-    The system estimates Remaining Useful Life, near-term failure probability,
-    sensor anomaly score, and a combined maintenance risk score.
+    
+    Goal is to explore how machine learning can support predictive maintenance:
+    estimating Remaining Useful Life, detecting near-failure risk, identifying unusual sensor behaviour,
+    and combining these outputs into a simple maintenance risk score.
+
     """
 )
 
+
 # Sidebar
-st.sidebar.header("Machine selection")
+st.sidebar.header("Engine selection")
 
 unit_ids = sorted(risk_df["unit_number"].unique())
 selected_unit = st.sidebar.selectbox("Select engine unit", unit_ids)
@@ -89,7 +83,8 @@ st.sidebar.metric(
 )
 st.sidebar.write(f"Risk level: **{latest_state['risk_level']}**")
 
-# Top KPIs
+
+# Main KPIs
 col1, col2, col3, col4 = st.columns(4)
 
 col1.metric("Predicted RUL", f"{latest_state['predicted_RUL']:.1f} cycles")
@@ -97,21 +92,24 @@ col2.metric("Failure probability", f"{latest_state['failure_probability']:.1%}")
 col3.metric("Anomaly score", f"{latest_state['anomaly_score']:.3f}")
 col4.metric("Risk score", f"{latest_state['maintenance_risk_score']:.1f}")
 
-st.subheader("Maintenance recommendation")
+
+# Interpretation
+st.subheader("Simple maintenance interpretation")
 
 risk_level = latest_state["risk_level"]
 
 if risk_level == "Critical":
-    st.error("Critical risk: immediate maintenance inspection recommended.")
+    st.error("Critical risk: the model sees strong signs of late-stage degradation.")
 elif risk_level == "High":
-    st.warning("High risk: schedule maintenance soon and monitor closely.")
+    st.warning("High risk: the engine shows elevated failure probability and should be monitored closely.")
 elif risk_level == "Medium":
-    st.info("Medium risk: continue monitoring and prepare maintenance planning.")
+    st.info("Medium risk: some degradation signals are present, but the situation is not yet critical.")
 else:
-    st.success("Low risk: machine state appears normal.")
+    st.success("Low risk: the engine looks relatively healthy based on the available sensor data.")
+
 
 # Risk trend
-st.subheader("Risk trend over machine lifecycle")
+st.subheader("Risk trend over engine lifecycle")
 
 fig_risk = px.line(
     unit_risk_df,
@@ -129,6 +127,7 @@ fig_risk.add_hline(y=50, line_dash="dot")
 fig_risk.add_hline(y=75, line_dash="dot")
 
 st.plotly_chart(fig_risk, use_container_width=True)
+
 
 # RUL and failure probability
 left, right = st.columns(2)
@@ -160,7 +159,8 @@ with right:
     )
     st.plotly_chart(fig_failure, use_container_width=True)
 
-# Sensor view
+
+# Sensor inspection
 st.subheader("Sensor signal inspection")
 
 sensor_cols = [
@@ -170,7 +170,10 @@ sensor_cols = [
     and not col.endswith("_delta")
 ]
 
-default_sensors = [s for s in ["sensor_2", "sensor_3", "sensor_4", "sensor_7", "sensor_11"] if s in sensor_cols]
+default_sensors = [
+    sensor for sensor in ["sensor_2", "sensor_3", "sensor_4", "sensor_7", "sensor_11"]
+    if sensor in sensor_cols
+]
 
 selected_sensors = st.multiselect(
     "Select sensors to display",
@@ -197,10 +200,11 @@ if selected_sensors:
 
     st.plotly_chart(fig_sensors, use_container_width=True)
 else:
-    st.info("Select at least one sensor.")
+    st.info("Select at least one sensor to display.")
+
 
 # Fleet overview
-st.subheader("Fleet-level risk overview")
+st.subheader("Fleet-level overview")
 
 latest_per_unit = (
     risk_df.sort_values("time_in_cycles")
@@ -234,6 +238,28 @@ st.dataframe(
     ].sort_values("maintenance_risk_score", ascending=False),
     use_container_width=True
 )
+
+
+# Project limitations
+st.subheader("Project limitations")
+
+st.markdown(
+    """
+    This dashboard is based on a benchmark simulation dataset, not live factory data.
+
+    Main limitations:
+    - the dataset is cleaner than real industrial sensor data;
+    - the failure modes are simplified;
+    - maintenance cost, spare parts and downtime impact are not modelled;
+    - the risk score is a custom heuristic, not an officially validated maintenance rule;
+    - the model should be interpreted as a learning project, not as a deployed safety-critical system.
+
+    The main purpose is to demonstrate the predictive maintenance workflow:
+    data preparation, time-series feature engineering, supervised learning, anomaly detection,
+    explainability and dashboarding.
+    """
+)
+
 
 # Explainability
 st.subheader("Model explainability")
