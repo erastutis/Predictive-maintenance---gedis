@@ -14,12 +14,14 @@ SENSOR_COLUMNS = [f"sensor_{i}" for i in range(1, 22)]
 def remove_constant_sensors(df: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
     """
     Removes sensors with almost no variation.
-    These features are not useful for ML models.
+
+    These sensors are not useful for ML models because they provide
+    little or no predictive signal.
     """
     removed = []
 
     for col in SENSOR_COLUMNS:
-        if df[col].nunique() <= 2:
+        if col in df.columns and df[col].nunique() <= 2:
             removed.append(col)
 
     df = df.drop(columns=removed)
@@ -29,15 +31,16 @@ def remove_constant_sensors(df: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
 
 def add_cycle_features(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Adds lifecycle-based features.
+    Adds lifecycle features that are available at prediction time.
+
+    Important:
+    Do NOT use max_cycle, estimated_life, or cycle_ratio.
+    Those values are only known after the engine has failed and would
+    create data leakage.
     """
     df = df.copy()
 
-    max_cycles = df.groupby("unit_number")["time_in_cycles"].transform("max")
-
-    df["cycle_ratio"] = df["time_in_cycles"] / max_cycles
     df["cycles_from_start"] = df["time_in_cycles"]
-    df["estimated_life"] = max_cycles
 
     return df
 
@@ -49,6 +52,8 @@ def add_rolling_features(
 ) -> pd.DataFrame:
     """
     Adds rolling mean and rolling standard deviation per engine unit.
+
+    These features capture short-term and medium-term sensor behaviour.
     """
     df = df.copy()
     df = df.sort_values(["unit_number", "time_in_cycles"])
@@ -75,7 +80,9 @@ def add_rolling_features(
 def add_delta_features(df: pd.DataFrame, sensor_cols: list[str]) -> pd.DataFrame:
     """
     Adds first-order sensor differences.
-    This captures short-term sensor movement.
+
+    This captures how much each sensor changed compared with
+    the previous cycle of the same engine.
     """
     df = df.copy()
     df = df.sort_values(["unit_number", "time_in_cycles"])
@@ -92,9 +99,10 @@ def add_delta_features(df: pd.DataFrame, sensor_cols: list[str]) -> pd.DataFrame
 
 def add_capped_rul(df: pd.DataFrame, cap: int = 125) -> pd.DataFrame:
     """
-    Caps RUL target.
+    Adds capped RUL target.
+
     In predictive maintenance, very high RUL values are often capped because
-    the early healthy stage is hard to distinguish precisely.
+    the early healthy stage is difficult to predict precisely.
     """
     df = df.copy()
     df["RUL_capped"] = np.minimum(df["RUL"], cap)
@@ -133,6 +141,7 @@ def build_features() -> pd.DataFrame:
     print(f"Output file: {OUTPUT_FILE}")
     print(f"Original sensor count: {len(SENSOR_COLUMNS)}")
     print(f"Removed low-variance sensors: {removed_sensors}")
+    print(f"Active sensor count: {len(active_sensor_cols)}")
     print(f"Final shape: {df.shape}")
 
     return df
