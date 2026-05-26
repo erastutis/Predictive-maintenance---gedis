@@ -46,6 +46,8 @@ This is a benchmark simulation dataset, not live factory data.
 | F1-score | 0.869 |
 | ROC-AUC | 0.994 |
 
+For predictive maintenance, recall is especially important because missing a near-failure state is usually worse than creating a false alert.
+
 ## Feature engineering
 
 Main engineered features:
@@ -79,3 +81,16 @@ Risk levels:
 | 75–100 | Critical |
 
 This score is a project heuristic, not a validated maintenance rule.
+
+## Dashboard
+
+The Streamlit dashboard shows:
+
+- selected engine unit
+- predicted RUL
+- failure probability
+- anomaly score
+- maintenance risk score
+- sensor trends
+- fleet-level risk overview
+- SHAP explainability plots
