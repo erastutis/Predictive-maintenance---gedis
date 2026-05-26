@@ -67,6 +67,7 @@ The maintenance risk score combines:
 risk_score = 0.50 * failure_probability
            + 0.35 * RUL_risk
            + 0.15 * anomaly_risk
+```
 
 Risk levels:
 
@@ -78,16 +79,3 @@ Risk levels:
 | 75–100 | Critical |
 
 This score is a project heuristic, not a validated maintenance rule.
-
-## Dashboard
-
-The Streamlit dashboard shows:
-
-- selected engine unit
-- predicted RUL
-- failure probability
-- anomaly score
-- maintenance risk score
-- sensor trends
-- fleet-level risk overview
-- SHAP explainability plots
