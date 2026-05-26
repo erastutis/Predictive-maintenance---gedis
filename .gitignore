@@ -6,6 +6,9 @@ data/raw/
 data/processed/
 reports/figures/
 
+reports/*.csv
+reports/figures/
+
 *.pkl
 *.joblib
 *.zip
